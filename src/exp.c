@@ -2,6 +2,8 @@
 #include <ctype.h> //for isdigit function
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
+#include <dirent.h>  //for opening the testing directory
 #include "exp.h"
 #include "base.h"
 
@@ -10,8 +12,10 @@
 #define copy(type, dest, src, size) (type* memcpy(dest, src, size))
 #define READ  "r"
 #define NO_FILES 5
-
 const char* ROOT_FILE = "./test_data/";
+
+typedef struct dirent * DIR_ptr;
+
 //global data
 const char* files[] = {
 	"test_50",
@@ -77,43 +81,59 @@ char *add(const char *s1, const char *s2){
 }
 
 double execute_serial(int *arr, int size){
-	int begin = clock();
+	struct timespec start, finish;
+	double elapsed;
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	quick_sort_serial(arr, 0, size-1);
-	int end = clock();
-	return (double)(end-begin)/CLOCKS_PER_SEC;
+	clock_gettime(CLOCK_MONOTONIC, &finish);
+	elapsed = (finish.tv_sec - start.tv_sec);
+	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	return elapsed;
 }
 
 double execute_parallel(int *arr, int size){
-	int begin =0, end =0;
+	struct timespec start, finish;
+	double elapsed;
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	#pragma omp parallel
 	{
 		#pragma omp master
 		{
-			begin = clock();
 			quick_sort_omp(arr, 0,size-1);
-			end = clock();
 		}
 	}
-	return (double)(end-begin)/CLOCKS_PER_SEC;
+	clock_gettime(CLOCK_MONOTONIC, &finish);
+	elapsed = (finish.tv_sec - start.tv_sec);
+	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	return elapsed;
 }
-
+int is_valid_fname(const char *fname){
+	return (strcmp(fname, ".") && strcmp(fname, ".."));
+}
 /** 
 *	@Brief Method for launching the experiment
 *	@returns: The list with all the numbers read from the file.
 */
 void run_experiment(){
-	int i =0;
-	while(i < NO_FILES){
-		char *filename = add(ROOT_FILE, files[i++]);
-		FILE_CONT* ser_temp = read_file(filename);
-		FILE_CONT* par_temp = read_file(filename);//redudant may wanna create a copy methof for the file contents
-		double duration = execute_serial(ser_temp->arr, ser_temp->size);
-		printf("Serial duration %.21f\n", duration);
-		duration = execute_parallel(par_temp->arr, par_temp->size);
-		printf("parallel duration %.21f\n", duration);
-		free(ser_temp);
-		free(par_temp);
+	DIR_ptr de; // Pointer for directory entry 
+	DIR *dr = opendir(ROOT_FILE);
+	while((de = readdir(dr))){
+		if((is_valid_fname(de->d_name))){
+			char* filename = add(ROOT_FILE, de->d_name);
+			FILE_CONT* ser_temp = read_file(filename);
+			FILE_CONT* par_temp = read_file(filename);//redudant may wanna create a copy methof for the file contentsssss
+			double duration = execute_serial(ser_temp->arr, ser_temp->size);
+			printf("Size: %d\n", ser_temp->size);
+			printf("\tS duration: %.21f\n", duration);
+			duration = execute_parallel(par_temp->arr, par_temp->size);
+			printf("\tP duration: %.21f\n", duration);
+			free(ser_temp->arr);
+			free(par_temp->arr);
+			free(ser_temp);
+			free(par_temp);
+		}
 	}
+	 closedir(dr); 
 }
 
 int main(){
