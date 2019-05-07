@@ -11,9 +11,11 @@ void quick_sort_omp(int *arr, int low, int hi){
 	if(hi > low){
 		//printf("thread number: %d from %d to %d\n", omp_get_thread_num(), low, hi);
 		int pi = partition(arr, low, hi);
-		{	
+		if(low > pi-1){
 			#pragma omp task
 			quick_sort_omp(arr, low, pi-1);
+		}
+		if(pi+1 < hi){
 			#pragma omp task
 			quick_sort_omp(arr, pi+1, hi);
 		}

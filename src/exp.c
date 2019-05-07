@@ -4,26 +4,17 @@
 #include <time.h>
 #include <string.h>
 #include <dirent.h>  //for opening the testing directory
+#include <omp.h>
 #include "exp.h"
 #include "base.h"
 
 //defines
-#define create(type, size) ((type*)malloc(sizeof(type)*size))
 #define copy(type, dest, src, size) (type* memcpy(dest, src, size))
 #define READ  "r"
 #define NO_FILES 5
 const char* ROOT_FILE = "./test_data/";
 
 typedef struct dirent * DIR_ptr;
-
-//global data
-const char* files[] = {
-	"test_50",
-	"test_100",
-	"test_500",
-	"test_1000",
-	"data",
-};
 
 //-----------------------Starting of  file defination------------------------------------------
 /**
@@ -92,9 +83,10 @@ double execute_serial(int *arr, int size){
 }
 
 double execute_parallel(int *arr, int size){
-	struct timespec start, finish;
+	/**struct timespec start, finish;
 	double elapsed;
-	clock_gettime(CLOCK_MONOTONIC, &start);
+	clock_gettime(CLOCK_MONOTONIC, &start);*/
+	double s = omp_get_wtime();
 	#pragma omp parallel
 	{
 		#pragma omp master
@@ -102,10 +94,11 @@ double execute_parallel(int *arr, int size){
 			quick_sort_omp(arr, 0,size-1);
 		}
 	}
-	clock_gettime(CLOCK_MONOTONIC, &finish);
+	return omp_get_wtime()-s;
+	/*clock_gettime(CLOCK_MONOTONIC, &finish);
 	elapsed = (finish.tv_sec - start.tv_sec);
 	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-	return elapsed;
+	return elapsed;*/
 }
 int is_valid_fname(const char *fname){
 	return (strcmp(fname, ".") && strcmp(fname, ".."));
