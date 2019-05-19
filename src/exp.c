@@ -8,12 +8,6 @@
 #include "exp.h"
 #include "base.h"
 
-//defines
-#define copy(type, dest, src, size) (type* memcpy(dest, src, size))
-#define READ  "r"
-#define NO_FILES 5
-const char* ROOT_FILE = "./test_data/";
-
 typedef struct dirent * DIR_ptr;
 
 //-----------------------Starting of  file defination------------------------------------------
@@ -52,22 +46,16 @@ FILE_CONT* read_file(char *filename){
 	FILE_CONT* t = create(FILE_CONT, 1);
 	t->size = size;
 	t->arr = arr;
-	t->min = min;
-	t->max = max;
 	fclose(file);
 	return t;
 }
 
 char *add(const char *s1, const char *s2){
-	int size1 = sizeof(s1)/sizeof(s1[0]);
-	int size2 = sizeof(s2)/sizeof(s2[0]);
-	char *result = create(char, (size1+size2));
-	const char *p = s1;
-	char *t = result;
-	while((*t++ = *p++));
-	--t;
-	p  = s2;
-	while((*t++ = *p++));
+	int size1 = strlen(s1);
+	int size2 = strlen(s2);
+	char *result = create(char, (size1+size2)+1);
+	strcpy(result, s1);
+	strcpy(result+size1, s2);
 	return result;
 }
 
@@ -83,9 +71,6 @@ double execute_serial(int *arr, int size){
 }
 
 double execute_parallel(int *arr, int size){
-	/**struct timespec start, finish;
-	double elapsed;
-	clock_gettime(CLOCK_MONOTONIC, &start);*/
 	double s = omp_get_wtime();
 	#pragma omp parallel
 	{
@@ -95,14 +80,23 @@ double execute_parallel(int *arr, int size){
 		}
 	}
 	return omp_get_wtime()-s;
-	/*clock_gettime(CLOCK_MONOTONIC, &finish);
-	elapsed = (finish.tv_sec - start.tv_sec);
-	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-	return elapsed;*/
 }
+
+//gets rid of current directory and parent directory in a given directory
 int is_valid_fname(const char *fname){
 	return (strcmp(fname, ".") && strcmp(fname, ".."));
 }
+
+FILE_CONT* md_memcpy(FILE_CONT* src){
+	FILE_CONT* temp= create(FILE_CONT, 1);
+	temp->size = src->size;
+	temp->arr= create(int, temp->size);
+	for(int i=0; i < temp->size; ++i){
+		temp->arr[i] = src->arr[i];
+	}
+	return temp;
+}
+
 /** 
 *	@Brief Method for launching the experiment
 *	@returns: The list with all the numbers read from the file.
@@ -113,17 +107,27 @@ void run_experiment(){
 	while((de = readdir(dr))){
 		if((is_valid_fname(de->d_name))){
 			char* filename = add(ROOT_FILE, de->d_name);
-			FILE_CONT* ser_temp = read_file(filename);
-			FILE_CONT* par_temp = read_file(filename);//redudant may wanna create a copy methof for the file contentsssss
-			double duration = execute_serial(ser_temp->arr, ser_temp->size);
-			printf("Size: %d\n", ser_temp->size);
-			printf("\tS duration: %.21f\n", duration);
-			duration = execute_parallel(par_temp->arr, par_temp->size);
-			printf("\tP duration: %.21f\n", duration);
-			free(ser_temp->arr);
-			free(par_temp->arr);
-			free(ser_temp);
-			free(par_temp);
+			printf("File: %s ",filename);
+			FILE_CONT* file_contents = read_file(filename);
+			double seq_duration = 0, par_duration=0;
+			int size = file_contents->size;
+			for(int i =0; i < 100; ++i){
+				int *sarr = create(int, size), *parr = create(int, size);
+				memcpy(parr, file_contents->arr, sizeof(int)*size);
+				memcpy(sarr, file_contents->arr, sizeof(int)*size);
+				//printf("parr: %p, sarrr: %p\n", parr, sarr);
+				seq_duration = execute_serial(sarr, size);
+				par_duration = execute_parallel(parr, size);
+				free(sarr);
+				free(parr);
+			}
+			printf("Size: %d\n", size);
+			printf("\tS duration: %.9f\n", seq_duration);
+			printf("\tP duration: %.9f\n", par_duration);
+			free(file_contents->arr);
+			free(file_contents);
+			free(filename);
+			filename = NULL;
 		}
 	}
 	 closedir(dr); 

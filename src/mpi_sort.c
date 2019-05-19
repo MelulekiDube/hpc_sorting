@@ -1,9 +1,12 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
+#include <time.h>
 #include <math.h>
+#include <string.h>
 #include "base.h"
-
+#include "exp.h"	
 int world_size, world_rank, max_rank;
 /*
 	@brief: The quick sort function implemented using omp
@@ -15,11 +18,10 @@ int world_size, world_rank, max_rank;
 void quick_sort_mpi(int *arr, int low, int hi, int index){
 	if(hi > low){
 		MPI_Status status;
-		int share_rank = world_rank + pow(2, index); /*get proc we can share with*/
-		++index;
-		
-		if(share_rank > world_size){ //if we have more processes
-			quick_sort_serial(arr, low, hi);
+		int share_rank = world_rank + pow(2, index++); /*get proc we can share with*/
+		if(share_rank >= world_size){ //if we have more processes
+			extern void quick_sort_omp(int *arr, int low, int hi);
+			quick_sort_omp(arr, low, hi);
 			return;
 		}
 		int pi = partition(arr, low, hi);
@@ -27,7 +29,6 @@ void quick_sort_mpi(int *arr, int low, int hi, int index){
 		MPI_Send(arr+pi, (hi-pi), MPI_INT, share_rank, pi , MPI_COMM_WORLD);
 		quick_sort_mpi(arr, low, pi-1, index);
 		MPI_Recv(arr+pi,(hi-pi),MPI_INT,share_rank,MPI_ANY_TAG,MPI_COMM_WORLD, &status);
-		printf("received arr from %d as %d\n", share_rank, world_rank);
 	}
 }
 
@@ -49,10 +50,8 @@ void receive_message(){
     int* number_buf = create(int, sub_arr_size);
     // Now receive the message with the allocated buffer
     MPI_Recv(number_buf, sub_arr_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	printf("process %d received from %d arr of size %d\n", world_rank, proc_sending, sub_arr_size);
 	quick_sort_mpi(number_buf, 0, sub_arr_size-1, index);
 	MPI_Send(number_buf, sub_arr_size, MPI_INT, proc_sending, tag, MPI_COMM_WORLD);
-	
 	free(number_buf);
 }
 
@@ -61,22 +60,40 @@ void init(int *arr, int size){
 	 MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 	 MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 	 if (world_rank == 0){
-		 int *arr = create(int, 20);
-		 quick_sort_mpi(arr, 0, size-1, 0);
-		 for(int i=0; i<20; ++i){
-			printf("%d", arr[i]);
-			if(i!=19)
-				printf(", ");
-			if(i==19)
-				printf("\n");
-		}
+		double time = MPI_Wtime();
+		quick_sort_mpi(arr, 0, size-1, 0);
+		printf("Duration was: %f\n", (MPI_Wtime()-time));
+		MPI_Finalize();
+		//MPI_Abort(MPI_COMM_WORLD, MPI_SUCCESS);
 	 }else{
 		 receive_message();
 	 }
-	 MPI_Finalize();
 }
 
-int main(){
-	init(NULL, 20);
+FILE_CONT* read_file(char *filename){
+	int min, max, size; /*max = max number in file; min  min num in file*/
+	FILE* file;
+	if(!(file = fopen(filename, READ))){
+		fprintf(stderr, "can't open %s\n" , filename);
+		exit(2);
+	}
+	
+	//initialize variables for creating the list
+	fscanf(file,"%d %d %d", &size, &max, &min);
+	//now create our list array
+	int *arr = create(int, size);
+	for(int i=0; i< size; ++i){
+		fscanf(file, "%d", &arr[i]);
+	}
+	FILE_CONT* t = create(FILE_CONT, 1);
+	t->size = size;
+	t->arr = arr;
+	fclose(file);
+	return t;
+}
+
+int main(int argc, char *argv[]){
+	FILE_CONT* fc = read_file("current_test");
+	init(fc->arr, fc->size);
 	return 0;
 }

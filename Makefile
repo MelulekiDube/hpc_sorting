@@ -12,7 +12,7 @@ TARGET := bin/runner
 
 SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
-SOURCES := $(filter-out $(SRCDIR)/mpi_sort.c, $(SOURCES))
+SOURCES := $(filter-out $(SRCDIR)/mpi_sort.c $(SRCDIR)/psrs.c $(SRCDIR)/omp_psrs.c, $(SOURCES))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 CFLAGS := -g -Wall 
 LIB :=  -fopenmp
@@ -32,13 +32,20 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT) clean
 mpi_sort:
 	@mkdir -p $(BINDIR);
 	@echo "compiling with mpicc"
-	$(MPICC) $(INC) $(SRCDIR)/mpi_sort.c $(SRCDIR)/serial_qsort.c $(SRCDIR)/base.c -o $(BINDIR)/mpi_sort.out -lm 
-	
+	$(MPICC) $(INC) $(SRCDIR)/mpi_sort.c $(SRCDIR)/serial_qsort.c $(SRCDIR)/base.c $(SRCDIR)/omp_qsort.c -o $(BINDIR)/mpi_sort.out -lm 
+
 run:
 	./$(TARGET)
 	
 mpi_sort_run: mpi_sort
-	mpirun -np 4 ./$(BINDIR)/mpi_sort.out
+	mpirun -np 4 ./$(BINDIR)/mpi_sort.out 
+	
+psrs_run:
+	mpicc ./$(SRCDIR)/.psrs.c $(INC) -o $(BINDIR)/psrs.out
+	
+omp_psrs:
+	$(CC) $(LIB) $(CFLAGS) $(INC) -o -o $(BINDIR)/omp_psrs.out
+	
 clean:
 	@echo " Cleaning..."; 
 	$(RM) -r $(BUILDDIR) $(TARGET) $(BINDIR)

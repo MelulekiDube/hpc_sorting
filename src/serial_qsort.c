@@ -7,10 +7,12 @@
 	@param hi: we we stop sorting
 */
 void quick_sort_serial(int *arr, int low, int hi){
-	if(hi > low){
+	if(hi > low && low >= 0){
 		int pi = partition(arr, low, hi);
-		quick_sort_serial(arr, low, pi-1);
-		quick_sort_serial(arr, pi+1, hi);
+		if(low < pi-1)
+			quick_sort_serial(arr, low, pi-1);
+		if(pi+1 < hi)
+			quick_sort_serial(arr, pi+1, hi);
 	}
 }
 

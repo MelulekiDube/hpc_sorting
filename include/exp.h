@@ -1,9 +1,12 @@
 #ifndef EXP_H
 #define EXP_H
 
+#define READ  "r"
+#define ROOT_FILE "./test_data/"
+
 typedef struct FILE_CONT{
 	int *arr;
-	int size, min, max;
+	int size;
 }FILE_CONT;
 
 /** 
