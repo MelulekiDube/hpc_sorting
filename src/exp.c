@@ -104,10 +104,12 @@ FILE_CONT* md_memcpy(FILE_CONT* src){
 void run_experiment(){
 	DIR_ptr de; // Pointer for directory entry 
 	DIR *dr = opendir(ROOT_FILE);
+	char *result_filename = "ompserial_results";
+	FILE* f = fopen(result_filename, "a");
 	while((de = readdir(dr))){
 		if((is_valid_fname(de->d_name))){
 			char* filename = add(ROOT_FILE, de->d_name);
-			printf("File: %s ",filename);
+			fprintf(f,"File: %s ",filename);
 			FILE_CONT* file_contents = read_file(filename);
 			double seq_duration = 0, par_duration=0;
 			int size = file_contents->size;
@@ -116,20 +118,21 @@ void run_experiment(){
 				memcpy(parr, file_contents->arr, sizeof(int)*size);
 				memcpy(sarr, file_contents->arr, sizeof(int)*size);
 				//printf("parr: %p, sarrr: %p\n", parr, sarr);
-				seq_duration = execute_serial(sarr, size);
-				par_duration = execute_parallel(parr, size);
+				seq_duration += execute_serial(sarr, size);
+				par_duration += execute_parallel(parr, size);
 				free(sarr);
 				free(parr);
 			}
-			printf("Size: %d\n", size);
-			printf("\tS duration: %.9f\n", seq_duration);
-			printf("\tP duration: %.9f\n", par_duration);
+			fprintf(f,"Size: %d\n", size);
+			fprintf(f,"\tS duration: %.9f\n", seq_duration/100);
+			fprintf(f,"\tP duration: %.9f\n", par_duration/100);
 			free(file_contents->arr);
 			free(file_contents);
 			free(filename);
 			filename = NULL;
 		}
 	}
+	fclose(f);
 	 closedir(dr); 
 }
 
