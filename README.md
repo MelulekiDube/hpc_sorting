@@ -1,7 +1,7 @@
 # hpc_sorting
 Implementation of serial quick sort, parallel quick sort and parallelsorting algortihm
 
-#Project structure</ln>
+#Project structure<br/>
 ├── include/<br/>
 ├── src/ <br/>
 ├── test_data/ <br/>
