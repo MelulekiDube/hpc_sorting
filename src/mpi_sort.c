@@ -71,14 +71,6 @@ void init(int *arr, int size){
 		double duration = (MPI_Wtime()-time);
 		printf("Size: %d\n", size);
 		printf("\tDuration was: %f\n", duration);
-		//used for testing if the returned list is sorted
-		for(int i=1; i<size; ++i){
-			printf("%d ", arr[i]);
-			if(arr[i] <arr[i-1]){
-				printf("Faliled\n");
-				//break;
-			}
-		}
 		//MPI_Abort(MPI_COMM_WORLD, MPI_SUCCESS);
 	 }else{
 		 receive_message();

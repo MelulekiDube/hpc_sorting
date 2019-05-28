@@ -116,13 +116,6 @@ main (int argc, char *argv[])
 	  MPI_Init(&argc, &argv);
 	  MPI_Comm_size(MPI_COMM_WORLD, &Numprocs);
 	  MPI_Comm_rank(MPI_COMM_WORLD, &MyRank);
-
-	  if(argc != 2) {
-		  if(MyRank ==0) printf(" Usage : run size\n");
-		 MPI_Finalize();
-		 exit(0);
-		}
-
 	  /**** Reading Input ****/
 	  
 	  if (MyRank == Root){
@@ -239,24 +232,17 @@ main (int argc, char *argv[])
 			}
 
 		  /**** Printng the output ****/
-			char output_file[200];
-			sprintf(output_file, "%s_%d_%d", "psrs_results", Numprocs ,NoofElements);
-			if ((fp = fopen(output_file, "w")) == NULL){
-				printf("Can't Open Output File \n");
-				exit(0);
-			}
 			 
-			fprintf (fp, "Number of Elements to be sorted : %d \n", NoofElements);
+			printf ("Number of Elements to be sorted : %d \n", NoofElements);
 			printf ( "Number of Elements to be sorted : %d \n", NoofElements);
-			fprintf (fp, "The sorted sequence is : \n");
+			printf ("The sorted sequence is : \n");
 			printf( "Sorted output sequence is\n\n");
 			for (i=0; i<NoofElements; i++){
-				fprintf(fp, "%d\n", Output[i]);
+				printf("%d\n", Output[i]);
 				printf( "%d   ", Output[i]);
 			}
 			fprintf(fp, "Duration is: %0.9f", (end_time-start_time));
 		printf ( " \n " );
-		fclose(fp);
 			//free(Input);
 		free(OutputBuffer);
 		free(Output);

@@ -41,10 +41,12 @@ mpi_sort_run: mpi_sort
 	mpirun -np 4 ./$(BINDIR)/mpi_sort.out 
 	
 psrs_run:
-	mpicc ./$(SRCDIR)/.psrs.c $(INC) -o $(BINDIR)/psrs.out
+	mpicc ./$(SRCDIR)/psrs.c $(INC) -o $(BINDIR)/psrs.out
 	
 omp_psrs:
-	$(CC) $(LIB) $(CFLAGS) $(INC) -o -o $(BINDIR)/omp_psrs.out
+	mkdir -p bin
+	$(CC) $(LIB) $(CFLAGS) $(INC) $(SRCDIR)/omp_psrs.c -o $(BINDIR)/omp_psrs.out -lm
+	$(BINDIR)/omp_psrs.out
 	
 clean:
 	@echo " Cleaning..."; 
