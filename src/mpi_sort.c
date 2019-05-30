@@ -16,25 +16,19 @@ int world_size, world_rank, max_rank;
 	@param hi: we we stop sorting
 */
 void quick_sort_mpi(int *arr, int low, int hi, int index){
-	if(hi > low && low >= 0){
+	if(hi > low){
 		MPI_Status status;
 		int share_rank = world_rank + pow(2, index++); /*get proc we can share with*/
 		if(share_rank >= world_size){ //if we have more processes
-			extern void quick_sort_omp(int *arr, int low, int hi);
-			quick_sort_serial(arr, low, hi);
+			quick_sort_omp(arr, low, hi);
 			return;
 		}
 		int pi = partition(arr, low, hi);
 		//send to the next available process
-		if((pi-low)<(hi-pi)){
-			MPI_Send(arr+low, (pi-low), MPI_INT, share_rank, pi , MPI_COMM_WORLD);
-			quick_sort_mpi(arr, pi+1, hi, index);
-			MPI_Recv(arr+low, (pi-low), MPI_INT,share_rank,MPI_ANY_TAG,MPI_COMM_WORLD, &status);
-		}else{
-			MPI_Send(arr+pi+1, (hi-pi), MPI_INT, share_rank, pi , MPI_COMM_WORLD);
-			quick_sort_mpi(arr, low, pi-1, index);
-			MPI_Recv(arr+pi+1,(hi-pi),MPI_INT,share_rank,MPI_ANY_TAG,MPI_COMM_WORLD, &status);
-		}
+		
+		MPI_Send(arr+pi+1, (hi-pi), MPI_INT, share_rank, pi , MPI_COMM_WORLD);
+		quick_sort_mpi(arr, low, pi-1, index);
+		MPI_Recv(arr+pi+1,(hi-pi),MPI_INT,share_rank,MPI_ANY_TAG,MPI_COMM_WORLD, &status);
 	}
 }
 
@@ -71,6 +65,14 @@ void init(int *arr, int size){
 		double duration = (MPI_Wtime()-time);
 		printf("Size: %d\n", size);
 		printf("\tDuration was: %f\n", duration);
+		//used for testing if the returned list is sorted
+		/**for(int i=1; i<size; ++i){
+			printf("%d ", arr[i]);
+			if(arr[i] <arr[i-1]){
+				printf("Faliled\n");
+				//break;
+			}
+		}*/
 		//MPI_Abort(MPI_COMM_WORLD, MPI_SUCCESS);
 	 }else{
 		 receive_message();

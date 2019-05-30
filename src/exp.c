@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L //for time.h
 #include <stdio.h> //using the fgetc and othe file operations
 #include <ctype.h> //for isdigit function
 #include <stdlib.h>
@@ -61,12 +62,19 @@ char *add(const char *s1, const char *s2){
 
 double execute_serial(int *arr, int size){
 	struct timespec start, finish;
+
 	double elapsed;
+
 	clock_gettime(CLOCK_MONOTONIC, &start);
+
 	quick_sort_serial(arr, 0, size-1);
+
 	clock_gettime(CLOCK_MONOTONIC, &finish);
+
 	elapsed = (finish.tv_sec - start.tv_sec);
+
 	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
 	return elapsed;
 }
 
@@ -124,8 +132,8 @@ void run_experiment(){
 				free(parr);
 			}
 			fprintf(f,"Size: %d\n", size);
-			fprintf(f,"\tS duration: %.9f\n", seq_duration/100);
-			fprintf(f,"\tP duration: %.9f\n", par_duration/100);
+			fprintf(f,"\tS duration: %.9f\n", (seq_duration/100));
+			fprintf(f,"\tP duration: %.9f\n", (par_duration/100));
 			free(file_contents->arr);
 			free(file_contents);
 			free(filename);
@@ -133,8 +141,9 @@ void run_experiment(){
 		}
 	}
 	fclose(f);
-	 closedir(dr); 
+	closedir(dr); 
 }
+
 
 int main(){
 	run_experiment();
